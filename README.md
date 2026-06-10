@@ -1,17 +1,12 @@
-# up_app
+# UP_APP
 
-A new Flutter project.
+Aplicación móvil para que los alumnos de la Universidad Politécnica de Apodaca puedan acceder a la información académica
 
-## Getting Started
+Elaborado mediante el Framework Flutter
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Creado por los alumnos del 1B ITIID:
+ - Josecarlos Daniel Garza Rodríguez
+ - José Ángel Gándara Pérez
+ - Manuel Elizondo Sauceda
+ - Enrique Gibrán Gómez Toscano
+ - Leslie Vanessa Ruiz Torres
