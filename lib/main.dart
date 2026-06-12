@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+// Variables globales para controlar el estado visual en toda la app de forma sencilla
+final ValueNotifier<ThemeMode> modoTemaNotificador = ValueNotifier(ThemeMode.light);
+final ValueNotifier<double> escalaTextoNotificador = ValueNotifier(1.0);
+
 void main() {
   runApp(const MiAppEstudiante());
 }
@@ -9,17 +13,62 @@ class MiAppEstudiante extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'UP-APP',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFFF8200), // Color de su paleta elegida
-          primary: const Color(0xFFFF8200),
-        ),
-        useMaterial3: true,
-      ),
-      home: const MenuPrincipal(),
+    const Color naranjaUP = Color(0xFFFF8200);
+
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: modoTemaNotificador,
+      builder: (context, ThemeMode modoActual, child) {
+        return ValueListenableBuilder<double>(
+          valueListenable: escalaTextoNotificador,
+          builder: (context, double escalaTexto, child) {
+            return MaterialApp(
+              debugShowCheckedModeBanner: false,
+              title: 'UP-APP',
+              themeMode: modoActual, 
+              // --- TEMA CLARO ---
+              theme: ThemeData(
+                useMaterial3: true,
+                colorScheme: ColorScheme.fromSeed(
+                  seedColor: naranjaUP,
+                  primary: naranjaUP,
+                  brightness: Brightness.light,
+                  surface: const Color(0xFFF5F5F5), // Fondo gris claro
+                ),
+                appBarTheme: const AppBarTheme(
+                  backgroundColor: naranjaUP,
+                  foregroundColor: Colors.white,
+                  elevation: 2,
+                ),
+                cardColor: Colors.white, // Solución al error de CardTheme
+              ),
+              // --- TEMA OSCURO ---
+              darkTheme: ThemeData(
+                useMaterial3: true,
+                colorScheme: ColorScheme.fromSeed(
+                  seedColor: naranjaUP,
+                  primary: naranjaUP,
+                  brightness: Brightness.dark,
+                  surface: const Color(0xFF121212), // Fondo gris oscuro
+                ),
+                appBarTheme: const AppBarTheme(
+                  backgroundColor: Color(0xFF212121), // Colors.grey[900]
+                  foregroundColor: naranjaUP,
+                  elevation: 2,
+                ),
+                cardColor: const Color(0xFF303030), // Solución al error de CardTheme oscuro
+              ),
+              // Escalado dinámico de texto para la accesibilidad
+              builder: (context, child) {
+                return MediaQuery(
+                  data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(escalaTexto)),
+                  child: child!,
+                );
+              },
+              home: const MenuPrincipal(),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -34,41 +83,33 @@ class MenuPrincipal extends StatefulWidget {
 class _MenuPrincipalState extends State<MenuPrincipal> {
   int _pestanaActual = 0;
 
-  // PASO 1: Vinculamos cada pestaña a su propio Widget especializado
   final List<Widget> _pantallas = [
-    const PantallaInicio(),       // Componente para la pestaña de Inicio
-    const PantallaInformacion(), // Componente para Información Personal
-    const Center(child: Text('Seguimiento cuatrimestral', style: TextStyle(fontSize: 20))),
-    const Center(child: Text('Desempeño académico', style: TextStyle(fontSize: 20))),
-    const Center(child: Text('Lista de opciones restantes de la APP', style: TextStyle(fontSize: 20))),
+    const PantallaInicio(),
+    const PantallaInformacion(),
+    const PantallaSeguimiento(),
+    const PantallaDesempeno(), 
+    const PantallaBecas(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-        elevation: 2,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: const [
-            Text(
-              'UP-APP', 
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              'Sistema Integral de Información', 
-              style: TextStyle(fontSize: 12, color: Colors.white70),
-            ),
+            Text('Sistema Integral de Información', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+            Text('Comunidad Estudiantil', style: TextStyle(fontSize: 12, color: Colors.white70)), // Solución al error de opacity
           ],
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
-            tooltip: 'Configuración',
             onPressed: () {
-              print('Abrir ajustes de la aplicación');
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const PantallaConfiguracion()),
+              );
             },
           ),
         ],
@@ -81,32 +122,581 @@ class _MenuPrincipalState extends State<MenuPrincipal> {
             _pestanaActual = index;
           });
         },
-        // SUGERENCIA UI: Cambiamos los iconos genéricos por unos acordes a cada sección
         destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Inicio',
+          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Inicio'),
+          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Info'),
+          NavigationDestination(icon: Icon(Icons.analytics_outlined), selectedIcon: Icon(Icons.analytics), label: 'Seguimiento'),
+          NavigationDestination(icon: Icon(Icons.edit_note_outlined), selectedIcon: Icon(Icons.edit_note), label: 'Desempeño'),
+          NavigationDestination(icon: Icon(Icons.more_vert), selectedIcon: Icon(Icons.more_vert), label: 'Becas'),
+        ],
+      ),
+    );
+  }
+}
+
+// ==========================================================
+// CONFIGURACIÓN (Con engranaje)
+// ==========================================================
+class PantallaConfiguracion extends StatefulWidget {
+  const PantallaConfiguracion({super.key});
+
+  @override
+  State<PantallaConfiguracion> createState() => _PantallaConfiguracionState();
+}
+
+class _PantallaConfiguracionState extends State<PantallaConfiguracion> {
+  bool _notificacionesActivas = true;
+  String _idiomaSeleccionado = 'Español';
+
+  @override
+  Widget build(BuildContext context) {
+    const Color naranjaUP = Color(0xFFFF8200);
+    bool esModoOscuro = modoTemaNotificador.value == ThemeMode.dark;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Configuración del Sistema', style: TextStyle(fontSize: 16)),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16.0),
+        children: [
+          const Text('Apariencia', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: naranjaUP)),
+          const SizedBox(height: 10),
+          Card(
+            elevation: 1,
+            child: Column(
+              children: [
+                SwitchListTile(
+                  title: const Text('Modo Nocturno', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Cambiar tema de la aplicación'),
+                  secondary: Icon(esModoOscuro ? Icons.dark_mode : Icons.light_mode, color: naranjaUP),
+                  value: esModoOscuro,
+                  activeTrackColor: naranjaUP.withOpacity(0.5), // Solución al error de activeColor deprecado
+                  activeColor: naranjaUP, // Funciona bien en las versiones actuales
+                  onChanged: (bool valor) {
+                    setState(() {
+                      modoTemaNotificador.value = valor ? ThemeMode.dark : ThemeMode.light;
+                    });
+                  },
+                ),
+                const Divider(height: 1),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(Icons.text_fields, color: naranjaUP),
+                          SizedBox(width: 15),
+                          Text('Tamaño de Texto', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                        ],
+                      ),
+                      Slider(
+                        value: escalaTextoNotificador.value,
+                        min: 0.8,
+                        max: 1.4,
+                        divisions: 3,
+                        activeColor: naranjaUP,
+                        label: '${(escalaTextoNotificador.value * 100).toInt()}%',
+                        onChanged: (valor) {
+                          setState(() {
+                            escalaTextoNotificador.value = valor;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Información',
+          
+          const SizedBox(height: 25),
+          const Text('Preferencias Generales', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: naranjaUP)),
+          const SizedBox(height: 10),
+          Card(
+            elevation: 1,
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.language, color: naranjaUP),
+                  title: const Text('Idioma de la interfaz', style: TextStyle(fontWeight: FontWeight.w600)),
+                  trailing: DropdownButton<String>(
+                    value: _idiomaSeleccionado,
+                    underline: const SizedBox(),
+                    items: <String>['Español', 'English'].map((String value) {
+                      return DropdownMenuItem<String>(value: value, child: Text(value));
+                    }).toList(),
+                    onChanged: (String? nuevoValor) {
+                      if (nuevoValor != null) {
+                        setState(() { _idiomaSeleccionado = nuevoValor; });
+                      }
+                    },
+                  ),
+                ),
+                const Divider(height: 1),
+                SwitchListTile(
+                  title: const Text('Notificaciones Push', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Avisos y mensajes del SII'),
+                  secondary: const Icon(Icons.notifications_active, color: naranjaUP),
+                  value: _notificacionesActivas,
+                  activeColor: naranjaUP,
+                  onChanged: (bool valor) {
+                    setState(() { _notificacionesActivas = valor; });
+                  },
+                ),
+              ],
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.analytics_outlined),
-            selectedIcon: Icon(Icons.analytics),
-            label: 'Seguimiento',
+
+          const SizedBox(height: 25),
+          const Text('Seguridad e Información', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: naranjaUP)),
+          const SizedBox(height: 10),
+          Card(
+            elevation: 1,
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.privacy_tip, color: naranjaUP),
+                  title: const Text('Privacidad de Datos', style: TextStyle(fontWeight: FontWeight.w600)),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () {},
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.info_outline, color: naranjaUP),
+                  title: const Text('Acerca de UP-APP', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Versión 1.0.0 (Desarrollo)'),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () {},
+                ),
+              ],
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.assignment_outlined),
-            selectedIcon: Icon(Icons.assignment),
-            label: 'Desempeño',
+          
+          const SizedBox(height: 30),
+          Center(
+            child: TextButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.logout, color: Colors.red),
+              label: const Text('Cerrar Sesión Local', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
+
+// ==========================================================
+// 1. PANTALLA DE INICIO
+// ==========================================================
+class PantallaInicio extends StatelessWidget {
+  const PantallaInicio({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const Color naranjaUP = Color(0xFFFF8200);
+
+    return ListView(
+      padding: const EdgeInsets.all(16.0),
+      children: [
+        Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: naranjaUP, width: 1)),
+          elevation: 1,
+          child: const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.campaign, color: naranjaUP, size: 28),
+                    SizedBox(width: 10),
+                    Text('AVISOS UPAP', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: naranjaUP)),
+                  ],
+                ),
+                SizedBox(height: 10),
+                Text('Bienvenido al ciclo escolar 2026. Los avisos importantes aparecerán aquí.'),
+              ],
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.more_horiz),
-            selectedIcon: Icon(Icons.more_horiz_rounded),
-            label: 'Ver más',
+        ),
+        const SizedBox(height: 20),
+        Card(
+          elevation: 1,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 80, height: 80,
+                      decoration: BoxDecoration(color: Colors.grey[400], borderRadius: BorderRadius.circular(10)),
+                      child: const Icon(Icons.person, size: 50, color: Colors.white),
+                    ),
+                    const SizedBox(width: 15),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('ALEJANDRO GARCÍA LÓPEZ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          Text('Matrícula: 20260088', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const Divider(height: 30),
+                _datoRow('Carrera:', 'Ing. en Tecnologías de la Información e Innovación Digital', context),
+                _datoRow('Estatus:', 'REGULAR', context, col: Colors.green),
+                _datoRow('Generación:', '2023 - 2026', context),
+                _datoRow('Promedio Gral:', '9.5', context),
+                _datoRow('Mat. Aprobadas:', '32', context),
+                _datoRow('Créd. Aprobados:', '210', context),
+                _datoRow('Grupo:', 'TI-07-B', context),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 25),
+        const Text('Panel Principal', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 15),
+        GridView.count(
+          crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12,
+          shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
+          childAspectRatio: 2.2,
+          children: [
+            _btnPanel(Icons.calendar_month, 'Calendario\nEscolar', naranjaUP),
+            _btnPanel(Icons.payments, 'Catálogo\nde Cuotas', naranjaUP),
+            _btnPanel(Icons.menu_book, 'Manual\nde Usuario', naranjaUP),
+            _btnPanel(Icons.work_outline, 'Estancias', naranjaUP),
+            _btnPanel(Icons.business_center, 'Estadías', naranjaUP),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _datoRow(String t, String v, BuildContext ctx, {Color? col}) {
+    bool isDark = Theme.of(ctx).brightness == Brightness.dark;
+    Color valorColor = col ?? (isDark ? Colors.white70 : Colors.black87);
+    if (col == Colors.green && isDark) valorColor = Colors.lightGreenAccent;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 5),
+      child: Row(children: [
+        Expanded(flex: 2, child: Text(t, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: isDark ? Colors.grey[400] : Colors.black54))),
+        Expanded(flex: 3, child: Text(v, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: valorColor))),
+      ]),
+    );
+  }
+
+  Widget _btnPanel(IconData i, String t, Color c) {
+    return Card(
+      elevation: 1,
+      child: InkWell(
+        onTap: () {},
+        child: Padding(padding: const EdgeInsets.all(8), child: Row(children: [
+          Icon(i, color: c), const SizedBox(width: 8), Expanded(child: Text(t, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)))
+        ])),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// 2. PANTALLA DE INFORMACIÓN PERSONAL
+// ==========================================
+class PantallaInformacion extends StatelessWidget {
+  const PantallaInformacion({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const Color naranjaUP = Color(0xFFFF8200);
+
+    return ListView(
+      padding: const EdgeInsets.all(16.0),
+      children: [
+        const Center(child: CircleAvatar(radius: 50, backgroundColor: Colors.grey, child: Icon(Icons.person, size: 60, color: Colors.white))),
+        const SizedBox(height: 20),
+        
+        _tarjetaInfo('Datos Personales', naranjaUP, [
+          _campo('Apellido Paterno', 'García'), _campo('Apellido Materno', 'López'), _campo('Nombre(s)', 'Alejandro'),
+          _campo('Fecha Nacimiento', '15 / Ago / 2004'), _campo('Nacionalidad', 'Mexicana'),
+          _campo('Estado Nac.', 'Nuevo León'), _campo('Municipio Nac.', 'Monterrey'),
+          _campo('Estado Civil', 'Soltero'), _campo('Sexo', 'Masculino'),
+          _campo('CURP', 'GALA040815HNLRR01'), _campo('RFC', 'GALA040815XYZ'), _campo('Tipo Sangre', 'A+'),
+        ]),
+
+        _tarjetaInfo('Familia y Contacto', naranjaUP, [
+          _campo('Nombre Padre', 'Roberto García'), _campo('Nombre Madre', 'Laura López'),
+          _campo('Tel. Local', '81 1122 3344'), _campo('Tel. Celular', '81 5566 7788'),
+          _campo('Correo Personal', 'alex.garcia@gmail.com'),
+        ]),
+
+        _tarjetaInfo('Domicilio', naranjaUP, [
+          _campo('Dirección', 'Calle Las Arboledas #123'), _campo('Colonia', 'Centro'),
+          _campo('Del. Municipal', 'Apodaca'), _campo('Código Postal', '66600'),
+          _campo('Municipio', 'Apodaca'),
+        ]),
+      ],
+    );
+  }
+
+  Widget _tarjetaInfo(String tit, Color col, List<Widget> campos) {
+    return Card(
+      elevation: 1,
+      margin: const EdgeInsets.only(bottom: 15),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(tit, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: col)),
+          const Divider(),
+          ...campos,
+        ]),
+      ),
+    );
+  }
+
+  Widget _campo(String e, String v) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(e, style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold)),
+        Text(v, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+      ]),
+    );
+  }
+}
+
+// ==========================================================
+// 3. PANTALLA DE SEGUIMIENTO (Restaurada al 100%)
+// ==========================================================
+class PantallaSeguimiento extends StatelessWidget {
+  const PantallaSeguimiento({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const Color naranjaUP = Color(0xFFFF8200);
+
+    return DefaultTabController(
+      length: 3,
+      child: Column(
+        children: [
+          const Material(
+            elevation: 1,
+            child: TabBar(
+              labelColor: naranjaUP, unselectedLabelColor: Colors.grey, indicatorColor: naranjaUP,
+              labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              tabs: [
+                Tab(text: 'Horario', icon: Icon(Icons.calendar_view_week)),
+                Tab(text: 'Carga Acad.', icon: Icon(Icons.assignment)),
+                Tab(text: 'Historial', icon: Icon(Icons.history)),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _tabHorario(),
+                _tabCargaAcad(),
+                _tabHistorialCuatrimestral(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tabHorario() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        columns: const [
+          DataColumn(label: Text('Hora')),
+          DataColumn(label: Text('Lun')), DataColumn(label: Text('Mar')), DataColumn(label: Text('Mié')),
+          DataColumn(label: Text('Jue')), DataColumn(label: Text('Vie')), DataColumn(label: Text('Sáb')), DataColumn(label: Text('Dom')),
+        ],
+        rows: List.generate(8, (i) => DataRow(cells: [
+          DataCell(Text('${7+i}:00')), 
+          ...List.generate(7, (_) => const DataCell(Text('')))
+        ])),
+      ),
+    );
+  }
+
+  Widget _tabCargaAcad() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            columns: const [
+              DataColumn(label: Text('Materia')),
+              DataColumn(label: Text('P1')), DataColumn(label: Text('P2')), DataColumn(label: Text('P3')),
+            ],
+            rows: const [
+              DataRow(cells: [DataCell(Text('Base de Datos')), DataCell(Text('9')), DataCell(Text('10')), DataCell(Text('9'))]),
+              DataRow(cells: [DataCell(Text('Redes de Comp.')), DataCell(Text('8')), DataCell(Text('9')), DataCell(Text('10'))]),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _tabHistorialCuatrimestral() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        columns: const [
+          DataColumn(label: Text('Periodo')), DataColumn(label: Text('Matrícula')), DataColumn(label: Text('Inscripción')),
+          DataColumn(label: Text('Programa')), DataColumn(label: Text('Cuatri.')), DataColumn(label: Text('Promedio')), DataColumn(label: Text('Estatus')),
+        ],
+        rows: const [
+          DataRow(cells: [
+            DataCell(Text('Sep-Dic 2024')), DataCell(Text('20260088')), DataCell(Text('Nuevo Ingreso')),
+            DataCell(Text('Ing. TIID')), DataCell(Text('1')), DataCell(Text('9.5')), DataCell(Text('REGULAR', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold))),
+          ]),
+        ],
+      ),
+    );
+  }
+}
+
+// ==========================================================
+// 4. PANTALLA DE DESEMPEÑO (Restaurada al 100%)
+// ==========================================================
+class PantallaDesempeno extends StatelessWidget {
+  const PantallaDesempeno({super.key}); 
+
+  @override
+  Widget build(BuildContext context) {
+    const Color naranjaUP = Color(0xFFFF8200);
+
+    return DefaultTabController(
+      length: 3,
+      child: Column(
+        children: [
+          const Material(
+            elevation: 1,
+            child: TabBar(
+              labelColor: naranjaUP, unselectedLabelColor: Colors.grey, indicatorColor: naranjaUP,
+              labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              tabs: [
+                Tab(text: 'Historial', icon: Icon(Icons.class_outlined)),
+                Tab(text: 'No Acredit.', icon: Icon(Icons.close_rounded)),
+                Tab(text: 'Boleta', icon: Icon(Icons.assignment_turned_in_outlined)),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _tabHistorialAcademico(context),
+                _tabMateriasNoAcreditadas(),
+                _tabBoletaCalificaciones(naranjaUP, context), 
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tabHistorialAcademico(BuildContext context) {
+    bool isDark = Theme.of(context).brightness == Brightness.dark;
+    Color headerColor = isDark ? const Color(0xFF424242) : const Color(0xFFF5F5F5);
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.vertical,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(12),
+          child: Card(
+            elevation: 1,
+            child: DataTable(
+              headingRowColor: WidgetStatePropertyAll(headerColor), 
+              columns: const [
+                DataColumn(label: Text('ID')), DataColumn(label: Text('Fecha')), DataColumn(label: Text('Ciclo')),
+                DataColumn(label: Text('Clave')), DataColumn(label: Text('Materia')), DataColumn(label: Text('Créd.')),
+                DataColumn(label: Text('Cal. Red.')), DataColumn(label: Text('Tipo Eval.')), DataColumn(label: Text('Estado')),
+              ],
+              rows: [
+                _datoKardex('1', '15/Dic/24', '1', 'IS101', 'Intro. a Sistemas', '5', '10', 'ORDINARIO', 'APROBADA'),
+                _datoKardex('2', '15/Dic/24', '1', 'MA102', 'Cálculo Diferencial', '6', '9', 'ORDINARIO', 'APROBADA'),
+                _datoKardex('3', '15/Dic/24', '1', 'IN103', 'Inglés I', '4', '10', 'ORDINARIO', 'APROBADA'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  DataRow _datoKardex(String id, String fecha, String ciclo, String clave, String materia, String cred, String cal, String tipo, String estado) {
+    return DataRow(cells: [
+      DataCell(Text(id)), DataCell(Text(fecha)), DataCell(Text(ciclo)), DataCell(Text(clave)), DataCell(Text(materia)), DataCell(Text(cred)),
+      DataCell(Text(cal, style: const TextStyle(fontWeight: FontWeight.bold))), DataCell(Text(tipo)), 
+      DataCell(Text(estado, style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold))),
+    ]);
+  }
+
+  Widget _tabMateriasNoAcreditadas() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.check_circle_outline_rounded, color: Colors.green, size: 60),
+          SizedBox(height: 20),
+          Text('No se registran materias', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text('sin acreditar.', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  Widget _tabBoletaCalificaciones(Color colorNaranja, BuildContext context) {
+    bool isDark = Theme.of(context).brightness == Brightness.dark;
+    Color headerColor = isDark ? const Color(0xFF424242) : const Color(0xFFEEEEEE);
+    Color finalRowColor = isDark ? const Color(0xFF4E2A00) : const Color(0xFFFFF2E5);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              headingRowColor: WidgetStatePropertyAll(headerColor), 
+              columnSpacing: 25,
+              columns: const [
+                DataColumn(label: Text('PERIODO CURSADO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                DataColumn(label: Text('CUATRIMESTRE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                DataColumn(label: Text('PROMEDIO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+              ],
+              rows: [ 
+                const DataRow(cells: [DataCell(Text('SEPTIEMBRE - DICIEMBRE 2024')), DataCell(Center(child: Text('1'))), DataCell(Text('9.29'))]),
+                const DataRow(cells: [DataCell(Text('ENERO - ABRIL 2025')), DataCell(Center(child: Text('2'))), DataCell(Text('9.14'))]),
+                const DataRow(cells: [DataCell(Text('MAYO - AGOSTO 2025')), DataCell(Center(child: Text('3'))), DataCell(Text('9.00'))]),
+                
+                DataRow(
+                  color: WidgetStatePropertyAll(finalRowColor), 
+                  cells: [
+                    DataCell(Text('PROMEDIO GENERAL', style: TextStyle(fontWeight: FontWeight.bold, color: colorNaranja, fontSize: 14))),
+                    const DataCell(Text('')),
+                    DataCell(Text('9.25', style: TextStyle(fontWeight: FontWeight.bold, color: colorNaranja, fontSize: 14))),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -114,109 +704,56 @@ class _MenuPrincipalState extends State<MenuPrincipal> {
   }
 }
 
-// ==========================================
-// PESTAÑA 1: DISEÑO DE LA PANTALLA DE INICIO
-// ==========================================
-class PantallaInicio extends StatelessWidget {
-  const PantallaInicio({super.key});
+// ==========================================================
+// 5. PANTALLA DE BECAS (Restaurada al 100%)
+// ==========================================================
+class PantallaBecas extends StatelessWidget {
+  const PantallaBecas({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Usamos ListView para que si agregamos muchas tarjetas, el alumno pueda hacer scroll
-    return ListView(
-      padding: const EdgeInsets.all(16.0), // Margen alrededor de toda la pantalla
-      children: [
-        const Text(
-          '¡Hola de nuevo!',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 5), // Espacio en blanco de separación
-        const Text(
-          'Revisa las novedades de la Universidad Politécnica.',
-          style: TextStyle(color: Colors.grey),
-        ),
-        const SizedBox(height: 20),
+    bool isDark = Theme.of(context).brightness == Brightness.dark;
+    Color headerColor = isDark ? const Color(0xFF424242) : const Color(0xFFF5F5F5);
 
-        // Tarjeta de Aviso 1 (Estilo Canvas)
-        Card(
-          elevation: 2, // Qué tanta sombra proyecta la tarjeta
-          child: Padding(
-            padding: const EdgeInsets.all(16.0), // Margen interno de la tarjeta
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: const [
-                    Icon(Icons.campaign, color: Color(0xFFFF8200)),
-                    SizedBox(width: 10),
-                    Text('Aviso Importante', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                const Text('Recuerda que la evaluación docente del cuatrimestre ya está disponible en el SII. Es obligatorio responderla.'),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ==========================================
-// PESTAÑA 2: INFORMACIÓN PERSONAL DEL ALUMNO
-// ==========================================
-class PantallaInformacion extends StatelessWidget {
-  const PantallaInformacion({super.key});
-
-  @override
-  Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(16.0),
       children: [
-        const Text(
-          'Perfil del Estudiante',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 20),
-
-        // Tarjeta con los datos del alumno (Estilo credencial digital)
+        const Text('Consulta de Becas', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 15),
         Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          elevation: 1,
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                const CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Color(0xFFFF8200),
-                  child: Icon(Icons.school, size: 40, color: Colors.white),
-                ),
-                const SizedBox(height: 15),
-                const Text(
-                  'Santiago Arroyo Garza', // Dato de ejemplo basado en su plantilla
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const Text('Matrícula: 20260001', style: TextStyle(color: Colors.grey)),
-                const Divider(height: 30), // Línea divisora fina
-                
-                // Filas de información técnica
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Text('Carrera:', style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text('Ing. en Tecnologías de la Información'),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Text('Estatus:', style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text('REGULAR', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              ],
+            padding: const EdgeInsets.all(12.0),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                headingRowColor: WidgetStatePropertyAll(headerColor),
+                columnSpacing: 25,
+                columns: const [
+                  DataColumn(label: Text('#', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Estatus', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Folio Beca', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Cuatrimestre', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Tipo Beca', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Porcentaje Aprobado', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Monto', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Renovación', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Observaciones', style: TextStyle(fontWeight: FontWeight.bold))),
+                ],
+                rows: const [
+                  DataRow(cells: [
+                    DataCell(Text('1')),
+                    DataCell(Text('ACTIVA', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold))),
+                    DataCell(Text('BEC-2026-0491')),
+                    DataCell(Text('7')),
+                    DataCell(Text('Excelencia Académica')),
+                    DataCell(Text('100%')),
+                    DataCell(Text('\$2,500.00')),
+                    DataCell(Text('Automática')),
+                    DataCell(Text('Ninguna')),
+                  ]),
+                ],
+              ),
             ),
           ),
         ),
