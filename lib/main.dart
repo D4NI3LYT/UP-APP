@@ -39,7 +39,7 @@ class MiAppEstudiante extends StatelessWidget {
                   foregroundColor: Colors.white,
                   elevation: 2,
                 ),
-                cardColor: Colors.white, // Solución al error de CardTheme
+                cardColor: Colors.white, 
               ),
               // --- TEMA OSCURO ---
               darkTheme: ThemeData(
@@ -55,7 +55,7 @@ class MiAppEstudiante extends StatelessWidget {
                   foregroundColor: naranjaUP,
                   elevation: 2,
                 ),
-                cardColor: const Color(0xFF303030), // Solución al error de CardTheme oscuro
+                cardColor: const Color(0xFF303030), 
               ),
               // Escalado dinámico de texto para la accesibilidad
               builder: (context, child) {
@@ -64,7 +64,7 @@ class MiAppEstudiante extends StatelessWidget {
                   child: child!,
                 );
               },
-              home: const MenuPrincipal(),
+              home: const PantallaLogin(),
             );
           },
         );
@@ -73,6 +73,153 @@ class MiAppEstudiante extends StatelessWidget {
   }
 }
 
+// ==========================================================
+// 0. NUEVA PANTALLA: LOGIN (Inicio de Sesión)
+// ==========================================================
+class PantallaLogin extends StatefulWidget {
+  const PantallaLogin({super.key});
+
+  @override
+  State<PantallaLogin> createState() => _PantallaLoginState();
+}
+
+class _PantallaLoginState extends State<PantallaLogin> {
+  final TextEditingController _matriculaController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    const Color naranjaUP = Color(0xFFFF8200);
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      appBar: AppBar(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: const [
+            Text('SISTEMA INTEGRAL DE INFORMACIÓN', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            Text('COMUNIDAD ESTUDIANTIL', style: TextStyle(fontSize: 11, color: Colors.white70)),
+          ],
+        ),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // BANNER DEL LOGO (Modificado: Se quitaron los íconos de simulación)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 15),
+                  decoration: BoxDecoration(
+                    color: naranjaUP,
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: const Center( // Ahora solo centramos el texto
+                    child: Text(
+                      'UNIVERSIDAD\nPOLITÉCNICA\nDE APODACA',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14), // Un poco más grande para mejor presencia al estar solo
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+                              
+                              const SizedBox(height: 40),
+
+                              // TEXTO DE BIENVENIDA
+                              const Text(
+                                'Bienvenido a la Comunidad\nEstudiantil',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                              ),
+              
+              const SizedBox(height: 40),
+
+              // CUADRO NARANJA DEL FORMULARIO
+              Container(
+                padding: const EdgeInsets.all(25.0),
+                decoration: BoxDecoration(
+                  color: naranjaUP,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Matrícula', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    const SizedBox(height: 5),
+                    TextField(
+                      controller: _matriculaController,
+                      keyboardType: TextInputType.number,
+                      style: const TextStyle(color: Colors.black87),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color(0xFFD9D9D9), // Gris claro exacto de la imagen
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(0), // Bordes cuadrados como en la foto
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    const Text('Contraseña:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    const SizedBox(height: 5),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: true, // Oculta el texto de la contraseña
+                      style: const TextStyle(color: Colors.black87),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color(0xFFD9D9D9),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(0),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 30),
+                    
+                    Center(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          // Navegación que reemplaza la pantalla actual para que no puedan "volver atrás" al login sin cerrar sesión
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (context) => const MenuPrincipal()),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE8EAF6), // Color gris/morado clarito del botón
+                          foregroundColor: Colors.black87,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text('Iniciar Sesion', style: TextStyle(fontSize: 16)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ==========================================================
+// MENÚ PRINCIPAL (El Dashboard con las pestañas)
+// ==========================================================
 class MenuPrincipal extends StatefulWidget {
   const MenuPrincipal({super.key});
 
@@ -99,7 +246,7 @@ class _MenuPrincipalState extends State<MenuPrincipal> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: const [
             Text('Sistema Integral de Información', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-            Text('Comunidad Estudiantil', style: TextStyle(fontSize: 12, color: Colors.white70)), // Solución al error de opacity
+            Text('Comunidad Estudiantil', style: TextStyle(fontSize: 12, color: Colors.white70)),
           ],
         ),
         actions: [
@@ -171,8 +318,8 @@ class _PantallaConfiguracionState extends State<PantallaConfiguracion> {
                   subtitle: const Text('Cambiar tema de la aplicación'),
                   secondary: Icon(esModoOscuro ? Icons.dark_mode : Icons.light_mode, color: naranjaUP),
                   value: esModoOscuro,
-                  activeTrackColor: naranjaUP.withOpacity(0.5), // Solución al error de activeColor deprecado
-                  activeColor: naranjaUP, // Funciona bien en las versiones actuales
+                  activeTrackColor: naranjaUP.withOpacity(0.5), 
+                  activeColor: naranjaUP, 
                   onChanged: (bool valor) {
                     setState(() {
                       modoTemaNotificador.value = valor ? ThemeMode.dark : ThemeMode.light;
@@ -278,7 +425,14 @@ class _PantallaConfiguracionState extends State<PantallaConfiguracion> {
           const SizedBox(height: 30),
           Center(
             child: TextButton.icon(
-              onPressed: () {},
+              // ¡Este botón ahora te regresa a la pantalla de Login y borra el historial!
+              onPressed: () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PantallaLogin()),
+                  (Route<dynamic> route) => false,
+                );
+              },
               icon: const Icon(Icons.logout, color: Colors.red),
               label: const Text('Cerrar Sesión Local', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
             ),
@@ -474,7 +628,7 @@ class PantallaInformacion extends StatelessWidget {
 }
 
 // ==========================================================
-// 3. PANTALLA DE SEGUIMIENTO (Restaurada al 100%)
+// 3. PANTALLA DE SEGUIMIENTO
 // ==========================================================
 class PantallaSeguimiento extends StatelessWidget {
   const PantallaSeguimiento({super.key});
@@ -571,7 +725,7 @@ class PantallaSeguimiento extends StatelessWidget {
 }
 
 // ==========================================================
-// 4. PANTALLA DE DESEMPEÑO (Restaurada al 100%)
+// 4. PANTALLA DE DESEMPEÑO
 // ==========================================================
 class PantallaDesempeno extends StatelessWidget {
   const PantallaDesempeno({super.key}); 
@@ -705,7 +859,7 @@ class PantallaDesempeno extends StatelessWidget {
 }
 
 // ==========================================================
-// 5. PANTALLA DE BECAS (Restaurada al 100%)
+// 5. PANTALLA DE BECAS
 // ==========================================================
 class PantallaBecas extends StatelessWidget {
   const PantallaBecas({super.key});
