@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 
 // Variables globales para controlar el estado visual en toda la app de forma sencilla
 final ValueNotifier<ThemeMode> modoTemaNotificador = ValueNotifier(ThemeMode.light);
@@ -449,6 +451,19 @@ class _PantallaConfiguracionState extends State<PantallaConfiguracion> {
 class PantallaInicio extends StatelessWidget {
   const PantallaInicio({super.key});
 
+Future<void> _abrirCalendario() async {
+    final Uri url = Uri.parse('https://www.upapnl.edu.mx/calendario-academico');
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      throw Exception('No se pudo abrir $url');
+    }
+  }
+Future<void> _abrirSII() async {
+    final Uri url = Uri.parse('http://sip.upnl.edu.mx/alumnos.php/');
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      throw Exception('No se pudo abrir $url');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     const Color naranjaUP = Color(0xFFFF8200);
@@ -524,11 +539,10 @@ class PantallaInicio extends StatelessWidget {
           shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
           childAspectRatio: 2.2,
           children: [
-            _btnPanel(Icons.calendar_month, 'Calendario\nEscolar', naranjaUP),
+            _btnPanel(Icons.calendar_month, 'Calendario\nEscolar', naranjaUP, onTap: _abrirCalendario, isExternal: true),
             _btnPanel(Icons.payments, 'Catálogo\nde Cuotas', naranjaUP),
             _btnPanel(Icons.menu_book, 'Manual\nde Usuario', naranjaUP),
-            _btnPanel(Icons.work_outline, 'Estancias', naranjaUP),
-            _btnPanel(Icons.business_center, 'Estadías', naranjaUP),
+            _btnPanel(Icons.business_center, 'Estadías y Estadías', naranjaUP, onTap: _abrirSII, isExternal: true),
           ],
         ),
       ],
@@ -549,14 +563,25 @@ class PantallaInicio extends StatelessWidget {
     );
   }
 
-  Widget _btnPanel(IconData i, String t, Color c) {
+Widget _btnPanel(IconData i, String t, Color c, {VoidCallback? onTap, bool isExternal = false}) {
     return Card(
       elevation: 1,
       child: InkWell(
-        onTap: () {},
-        child: Padding(padding: const EdgeInsets.all(8), child: Row(children: [
-          Icon(i, color: c), const SizedBox(width: 8), Expanded(child: Text(t, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)))
-        ])),
+        onTap: onTap, // Ahora ejecuta la acción que le mandemos
+        child: Padding(
+          padding: const EdgeInsets.all(8), 
+          child: Row(
+            children: [
+              Icon(i, color: c), 
+              const SizedBox(width: 8), 
+              Expanded(child: Text(t, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold))),
+              
+              // Si le decimos que es externo, dibuja este pequeño ícono
+              if (isExternal)
+                const Icon(Icons.open_in_new, size: 14, color: Colors.grey),
+            ]
+          )
+        ),
       ),
     );
   }
