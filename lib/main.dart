@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import 'package:html/parser.dart' as html_parser;
 
 
 // Variables globales para controlar el estado visual en toda la app de forma sencilla
@@ -88,6 +90,103 @@ class PantallaLogin extends StatefulWidget {
 class _PantallaLoginState extends State<PantallaLogin> {
   final TextEditingController _matriculaController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  // 1. Variable para controlar la ruedita de carga
+  bool _estaCargando = false;
+
+  // 2. Función para mostrar el error flotante (estilo Material 3)
+  void _mostrarMensajeError(String mensaje) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          mensaje,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  // 3. Función para conectar con la API
+  Future<void> _iniciarSesion(String matricula, String password) async {
+    // Si los campos están vacíos, no hacemos la petición
+    if (matricula.isEmpty || password.isEmpty) {
+      _mostrarMensajeError('Por favor, ingresa tu matrícula y contraseña.');
+      return;
+    }
+
+    setState(() { _estaCargando = true; });
+
+    try {
+      final baseUrl = 'http://sip.upnl.edu.mx/alumnos.php';
+      final urlSignin = Uri.parse('$baseUrl/signin');
+
+      // 1. Petición GET inicial: obtenemos la cookie de sesión temporal
+      //    y el token CSRF que viene oculto en el formulario HTML.
+      final respuestaInicial = await http.get(urlSignin);
+
+      final cookieInicial = respuestaInicial.headers['set-cookie']?.split(';').first;
+      if (cookieInicial == null) {
+        _mostrarMensajeError('No se pudo iniciar sesión con el servidor.');
+        return;
+      }
+
+      final documento = html_parser.parse(respuestaInicial.body);
+      final csrfInput = documento.querySelector('input[name="signin[_csrf_token]"]');
+      final csrfToken = csrfInput?.attributes['value'];
+
+      if (csrfToken == null) {
+        _mostrarMensajeError('No se pudo iniciar sesión con el servidor.');
+        return;
+      }
+
+      // 2. Petición POST con las credenciales reales, la cookie inicial
+      //    y el token CSRF (tal como lo hace el navegador).
+      final respuesta = await http.post(
+        urlSignin,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Cookie': cookieInicial,
+        },
+        body: {
+          'signin[_csrf_token]': csrfToken,
+          'signin[tipo_usuario]': '1',
+          'signin[username]': matricula,
+          'signin[password]': password,
+        },
+      );
+
+      // 3. Un login CORRECTO responde 302 y redirige a alumnos.php/
+      //    (no a alumnos.php/signin de nuevo). Además, entrega una
+      //    cookie de sesión NUEVA (distinta a la inicial).
+      final location = respuesta.headers['location'] ?? '';
+      final cookieNueva = respuesta.headers['set-cookie']?.split(';').first;
+
+      final loginExitoso = respuesta.statusCode == 302 &&
+          !location.contains('signin') &&
+          cookieNueva != null;
+
+      if (loginExitoso) {
+        // Guarda la cookie de sesión para usarla en las siguientes peticiones
+        // (consultar calificaciones, becas, etc). Recomendado: flutter_secure_storage.
+        // await storage.write(key: 'session_cookie', value: cookieNueva);
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MenuPrincipal()),
+        );
+      } else {
+        _mostrarMensajeError('Matrícula o contraseña incorrectos.');
+      }
+    } catch (e) {
+      _mostrarMensajeError('Error de conexión. Revisa tu internet.');
+    } finally {
+      setState(() { _estaCargando = false; });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -189,15 +288,18 @@ class _PantallaLoginState extends State<PantallaLogin> {
                     
                     Center(
                       child: ElevatedButton(
-                        onPressed: () {
-                          // Navegación que reemplaza la pantalla actual para que no puedan "volver atrás" al login sin cerrar sesión
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (context) => const MenuPrincipal()),
-                          );
-                        },
+                        // Si está cargando, ponemos null para deshabilitar el botón
+                        onPressed: _estaCargando
+                            ? null
+                            : () {
+                                // Llamamos a nuestra nueva función
+                                _iniciarSesion(
+                                  _matriculaController.text.trim(),
+                                  _passwordController.text.trim(),
+                                );
+                              },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE8EAF6), // Color gris/morado clarito del botón
+                          backgroundColor: const Color(0xFFE8EAF6),
                           foregroundColor: Colors.black87,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 12),
@@ -205,7 +307,14 @@ class _PantallaLoginState extends State<PantallaLogin> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        child: const Text('Iniciar Sesion', style: TextStyle(fontSize: 16)),
+                        // Cambiamos el texto por una ruedita de carga si está conectándose
+                        child: _estaCargando
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(color: Colors.black87, strokeWidth: 2),
+                              )
+                            : const Text('Iniciar Sesión', style: TextStyle(fontSize: 16)),
                       ),
                     ),
                   ],
