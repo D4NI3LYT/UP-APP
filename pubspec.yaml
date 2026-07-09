@@ -1,4 +1,4 @@
-name: up_app
+name: UP_APP
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -37,6 +37,7 @@ dependencies:
   flutter_native_splash: ^2.4.8
   url_launcher: ^6.3.2
   http: ^1.6.0
+  flutter_launcher_icons: ^0.14.4
 
 
 dev_dependencies:
@@ -60,6 +61,8 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  assets:
+    - assets/Logo.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
@@ -92,10 +95,14 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 flutter_native_splash:
-  color: "#FF8200" 
-  image: assets/logo_splash_placeholder.png 
-  android: true 
-
+  color: "#FF8203"
+  image: assets/Splash.png
+  
   android_12:
-    image: assets/logo_splash.png
-    color: "#FF8200"
+    color: "#FF8203"
+    image: assets/Splash.png
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/Icon.png"

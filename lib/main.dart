@@ -120,10 +120,25 @@ class _PantallaLoginState extends State<PantallaLogin> {
             children: [
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 15),
+                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 15), 
                 decoration: BoxDecoration(color: naranjaUP, borderRadius: BorderRadius.circular(15)),
-                child: const Center(
-                  child: Text('UNIVERSIDAD\nPOLITÉCNICA\nDE APODACA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16), textAlign: TextAlign.center),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center, 
+                  children: [
+                    Image.asset(
+                      'assets/Logo.png',
+                      height: 65, 
+                    ),
+                    const SizedBox(width: 15), 
+                    const Text(
+                      'UNIVERSIDAD\nPOLITÉCNICA\nDE APODACA', 
+                      style: TextStyle(
+                        color: Colors.white, 
+                        fontWeight: FontWeight.bold, 
+                        fontSize: 16
+                      ), 
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 40),
@@ -264,16 +279,6 @@ class _PantallaConfiguracionState extends State<PantallaConfiguracion> {
             elevation: 1,
             child: Column(
               children: [
-                ListTile(
-                  leading: const Icon(Icons.language, color: naranjaUP),
-                  title: const Text('Idioma de la interfaz', style: TextStyle(fontWeight: FontWeight.w600)),
-                  trailing: DropdownButton<String>(
-                    value: _idiomaSeleccionado, underline: const SizedBox(),
-                    items: <String>['Español', 'English'].map((String value) => DropdownMenuItem<String>(value: value, child: Text(value))).toList(),
-                    onChanged: (String? nuevoValor) { if (nuevoValor != null) setState(() => _idiomaSeleccionado = nuevoValor); },
-                  ),
-                ),
-                const Divider(height: 1),
                 SwitchListTile(
                   title: const Text('Notificaciones Push', style: TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: const Text('Avisos y mensajes del SII'),
