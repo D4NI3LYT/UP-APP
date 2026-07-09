@@ -1,4 +1,4 @@
-# UP_APP
+# UP-APP
 
 Aplicación móvil para que los alumnos de la Universidad Politécnica de Apodaca puedan acceder a la información académica
 
@@ -10,3 +10,4 @@ Creado por los alumnos del 1B ITIID:
  - Manuel Elizondo Sauceda
  - Enrique Gibrán Gómez Toscano
  - Leslie Vanessa Ruiz Torres
+
